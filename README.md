@@ -13,9 +13,27 @@ In a robotic application you want to easily integrate the following elements
 # Some code
 ```
 auto steerAngle = redis.publisher<float>("dst/drive/steer/angle");
-redis.subscriber<float>("src/navigation/compass/degrees") >> [](const float &direction){
+auto compassDirection = redis.subscriber<float>("src/navigation/compass/degrees") 
+// CONTROL logic 
+compassDirection >> [](const float &direction){
   auto delta = desiredDirection - direction;
   steerAngle.on(delta);
   };
+  // RECORDING the data for posterity
+compassDirection >> [](const float direction){
+    redis.command({"TS.ADD","compassDirection","*",std::to_string(direction),"LABELS","node","compass","unit","degrees"});
+    };
+    
+compassDirection >> [](const float& direction){
+      redis.command({"XADD","..."});
+    };
+
+compassDirection >> redis.ts<float>("ts:lm:compass",{{"node","lawnmower"},{"object","compass"}});
+compassDirection >> redis.stream("str:log");
+
+localPosition >> [](const Location& relativeLocation ){
+  auto absoluteLocation = relativeLocation + referenceLocation
+  redis.geo(absoluteLocation );
+}
 ```
 
