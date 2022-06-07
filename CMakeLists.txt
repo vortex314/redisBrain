@@ -11,7 +11,7 @@ add_definitions(-DLINUX -std=c++11)
 # set(CMAKE_BUILD_TYPE Debug)
 
 set(LIMERO limero)
-set(HIREDIS hiredis )
+set(HIREDIS /home/lieven/workspace/redisBrain/hiredis )
 
 
 
@@ -46,7 +46,7 @@ include_directories(src
 
 target_link_libraries(redisBrain 
         -lpthread 
-        -L../hiredis -l:libhiredis.a
+        -L${HIREDIS} -l:libhiredis.a
         -lrt 
         -pthread 
         -latomic )
