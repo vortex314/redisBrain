@@ -1,6 +1,6 @@
 {
     "redis": {
-        "host": "localhost",
+        "host": "pi1.local",
         "port": 6379
     }
 }

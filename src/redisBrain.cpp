@@ -10,6 +10,7 @@ Log logger;
 
 std::string loadFile(const char *name);
 bool loadConfig(JsonObject cfg, int argc, char **argv);
+int timeOfDay();
 
 int main(int argc, char **argv) {
   INFO("Start %s", argv[0]);
@@ -31,11 +32,41 @@ int main(int argc, char **argv) {
     //  INFO("Got response : %s", s.c_str());
   };
 
-  redis.subscriber<int>("src/x/y/z") >> redis.publisher<int>("dst/x/y/z");
-  redis.subscriber<std::string>("src/x/y/a") >>
-      redis.publisher<std::string>("dst/x/y/a");
+  TimerSource ticker(workerThread, 300000, true, "ticker");
+  ValueFlow<bool> shake;
+  shake >> redis.publisher<bool>("dst/shaker1/shake/trigger");
+  shake >> redis.publisher<bool>("dst/shaker2/shake/trigger");
+  shake >> redis.publisher<bool>("dst/shaker3/shake/trigger");
+  redis.subscriber<uint32_t>("dst/brain/shaker/interval") >>
+      [&](const uint32_t &count) {
+        INFO("Got interval %d", count);
+        ticker.interval(count);
+      };
+
+  ticker >> [&shake](const TimerMsg &) {
+    int now = timeOfDay();
+    if (now > 529 && now < 2200) {
+      INFO("let's shake it %d ", now);
+      shake = true;
+    } else {
+      INFO(" sleeping.... ");
+    }
+  };
 
   workerThread.run();
+}
+
+#include <sys/time.h>
+int timeOfDay() {
+  struct timeval tv;
+  struct timezone tz;
+  time_t t;
+  struct tm *info;
+
+  gettimeofday(&tv, NULL);
+  t = tv.tv_sec;
+  info = localtime(&t);
+  return (info->tm_hour * 100) + info->tm_min;
 }
 
 void deepMerge(JsonVariant dst, JsonVariant src) {
