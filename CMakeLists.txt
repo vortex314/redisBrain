@@ -11,7 +11,7 @@ add_definitions(-DLINUX -std=c++11)
 # set(CMAKE_BUILD_TYPE Debug)
 
 set(LIMERO limero)
-set(HIREDIS /home/lieven/workspace/redisBrain/hiredis )
+set(HIREDIS hiredis )
 
 
 
@@ -19,10 +19,12 @@ add_executable(redisBrain)
 
 target_sources(redisBrain PRIVATE 
     src/redisBrain.cpp 
-    src/config.cpp
+    src/joystickLogic.cpp 
     ${LIMERO}/src/StringUtility.cpp
     ${LIMERO}/src/printf.c
     ${LIMERO}/linux/Redis.cpp
+    ${LIMERO}/linux/ConfigFile.cpp
+    ${LIMERO}/linux/LogFile.cpp
     ${LIMERO}/linux/Log.cpp
     ${LIMERO}/linux/Sys.cpp
     ${LIMERO}/linux/limero.cpp
@@ -46,7 +48,7 @@ include_directories(src
 
 target_link_libraries(redisBrain 
         -lpthread 
-        -L${HIREDIS} -l:libhiredis.a
+        -L../${HIREDIS} -l:libhiredis.a
         -lrt 
         -pthread 
         -latomic )
