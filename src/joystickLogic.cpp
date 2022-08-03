@@ -26,8 +26,8 @@ void joystickLogic(Redis &redis, Thread &workerThread) {
 
   redis.subscriber<int32_t>("src/joystick/axis/2") >>
       *new LambdaFlow<int32_t, int32_t>([&](int32_t &out, const int32_t &in) {
-        out = scale(in, -32768, +32768, -1000, +1000);
+        out = scale(in, -32768, +32768, -90, +90);
         return true;
       }) >>
-      redis.publisher<int32_t>("dst/hover/motor/steerTarget");
+      redis.publisher<int32_t>("dst/hover/motor/angleTarget");
 }
