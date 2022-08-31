@@ -5,8 +5,7 @@
             "label": "MAKE",
             "type": "shell",
             "command": "make",
-            "args": [
-            ],
+            "args": [],
             "options": {
                 "cwd": "${workspaceFolder}/build"
             },
@@ -48,6 +47,17 @@
             "options": {
                 "cwd": "/usr/bin"
             }
+        },
+        {
+            "type": "cmake",
+            "label": "CMake: build",
+            "command": "build",
+            "targets": [
+                "all"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "detail": "CMake template build task"
         }
     ]
 }
