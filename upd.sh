@@ -1,4 +1,5 @@
 set -x
+git pull
 cd ArduinoJson
 git checkout 6.x
 git pull

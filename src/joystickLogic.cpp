@@ -14,8 +14,12 @@ void joystickLogic(Redis &redis, Thread &workerThread) {
       new TimerSource(workerThread, 1000, true, "ticker");
 
   auto &pubWatchdog = redis.publisher<bool>("dst/hover/motor/watchdogReset");
+  auto &redisBrainAlive = redis.publisher<bool>("src/redisBrain/system/alive");
 
-  *timerWatchdog >> [&](const TimerMsg &) { pubWatchdog.on(true); };
+  *timerWatchdog >> [&](const TimerMsg &) {
+    pubWatchdog.on(true);
+    redisBrainAlive.on(true);
+  };
 
   redis.subscriber<int32_t>("src/joystick/axis/3") >>
       *new LambdaFlow<int32_t, int32_t>([&](int32_t &out, const int32_t &in) {

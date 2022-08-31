@@ -3,13 +3,10 @@
         {
             "name": "ESP32",
             "includePath": [
-                "${workspaceFolder}/../Common/",
-                "${workspaceFolder}/../ArduinoJson/src/",
-                "${workspaceFolder}/../paho.mqtt.c/src/",
-                "${workspaceFolder}/../hiredis/",
-                "${workspaceFolder}/../json/single_include/",
-                "${workspaceFolder}/../limero/inc/",
-                "${workspaceFolder}/../limero/linux/",
+                "${workspaceFolder}/ArduinoJson/src/",
+                "${workspaceFolder}/hiredis/",
+                "${workspaceFolder}/limero/inc/",
+                "${workspaceFolder}/limero/linux/",
                 "${workspaceFolder}/src/"
             ],
             "defines": [
