@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/build/redisBrain",
             "args": [
                 "-f",
-                "../src/joystick2redis.json"
+                "${workspaceFolder}/src/redisBrain.json"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/",

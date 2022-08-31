@@ -1,6 +1,6 @@
 {
     "redis": {
-        "host": "localhost",
+        "host": "limero.local",
         "port": 6379
     },
     "log-ignore": {
