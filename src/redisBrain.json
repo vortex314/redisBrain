@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "redis": {
     "host": "limero.local",
     "port": 6379
@@ -10,15 +9,3 @@
     "limit": 1048576
   }
 }
-=======
-    "redis": {
-        "host": "limero.local",
-        "port": 6379
-    },
-    "log-ignore": {
-        "prefix": "/home/lieven/log/redisBrain_",
-        "count": 10,
-        "limit": 1048576
-    }
-}
->>>>>>> dfb9e7c16c930bde5fc9657a5d11e4dbd4df06a3
