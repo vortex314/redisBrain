@@ -17,6 +17,7 @@ LambdaFlow<IN, OUT> &flow(std::function<bool(OUT &out, const IN &in)> f) {
 template <typename IN, typename OUT>
 LambdaFlow<IN, OUT> &map(IN v1, OUT v2) {
   return *new LambdaFlow<IN, OUT>([v1, v2](OUT &out, const IN &in) {
+    INFO("map %d -> %d for %d -> %d", v1, v2, in, out);
     if (in == v1) {
       out = v2;
       return true;
@@ -44,21 +45,6 @@ void joystickLogic(Redis &r, Thread &workerThread) {
     pubWatchdog.on(true);
     redisBrainAlive.on(true);
   };
-  /*
-    r.subscriber<int32_t>("src/joystick/axis/3") >>
-        *new LambdaFlow<int32_t, int32_t>([&](int32_t &out, const int32_t &in) {
-          out = -scale(in, -32768, +32768, -1000, +1000);
-          return true;
-        }) >>
-        r.publisher<int32_t>("dst/hover/motor/speedTarget");
-
-    r.subscriber<int32_t>("src/joystick/axis/2") >>
-        *new LambdaFlow<int32_t, int32_t>([&](int32_t &out, const int32_t &in) {
-          out = scale(-in, -32768, +32768, -90, +90);
-          return true;
-        }) >>
-        r.publisher<int32_t>("dst/hover/motor/angleTarget");
-  */
 
   r.subscriber<int32_t>("src/joystick/axis/3") >>
       range(1, -32768, +32768, -1000, +1000, -1) >>
@@ -70,8 +56,12 @@ void joystickLogic(Redis &r, Thread &workerThread) {
 
   auto button_0 = r.subscriber<int>("src/joystick/button/0");
   auto button_1 = r.subscriber<int>("src/joystick/button/1");
-  auto &pubPowerOn = r.publisher<int>("src/limero/powerOn");
+
+  auto &pubPowerOn = r.publisher<int>("dst/limero/powerOn");
   auto subPowerOn = r.subscriber<int>("src/limero/powerOn");
+  auto powerOn = *new ValueFlow<int>(0);
+  r.subscriber<int>("dst/limero/powerOn") >> powerOn >>
+      r.publisher<int>("src/limero/powerOn");
 
   button_0 >> map(1, 1) >> pubPowerOn;
   button_1 >> map(1, 0) >> pubPowerOn;
