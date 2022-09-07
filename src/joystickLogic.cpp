@@ -73,7 +73,7 @@ void joystickLogic(Redis &r, Thread &workerThread) {
   collisonLeft >> map(1, 0) >> pubPowerOn;
   collisonRight >> map(1, 0) >> pubPowerOn;
 
-  auto pubSrcPowerOn = r.publisher<int>("src/limero/powerOn");
+  auto &pubSrcPowerOn = r.publisher<int>("src/limero/powerOn");
 
   *timerWatchdog >> [&](const TimerMsg &) {
     pubWatchdog.on(true);

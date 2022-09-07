@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
   joystickLogic(redis,workerThread);
 
   TimerSource ticker(workerThread, 300000, true, "ticker");
-  ValueFlow<bool> shake;
+  ValueFlow<bool> shake(false);
   shake >> redis.publisher<bool>("dst/shaker1/shake/trigger");
   shake >> redis.publisher<bool>("dst/shaker2/shake/trigger");
   shake >> redis.publisher<bool>("dst/shaker3/shake/trigger");
