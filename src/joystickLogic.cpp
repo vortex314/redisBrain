@@ -27,6 +27,14 @@ LambdaFlow<IN, OUT> &map(IN v1, OUT v2) {
 }
 
 template <typename IN, typename OUT>
+LambdaFlow<IN, OUT> &timeout(Thread &thread, int timeout_msec, OUT v1) {
+  TimerSource &ts = *new TimerSource(thread, timeout_msec, true);
+
+  return *new LambdaFlow<IN, OUT>(
+      [v1, ts](OUT &out, const IN &in) { return false; });
+}
+
+template <typename IN, typename OUT>
 LambdaFlow<IN, OUT> *range(IN inMultiplier, IN x1, IN x2, OUT outMultiplier,
                            OUT y1, OUT y2) {
   return new LambdaFlow<IN, OUT>([=](OUT &out, const IN &in) {
@@ -52,33 +60,29 @@ void joystickLogic(Redis &r, Thread &workerThread) {
 
   auto &button_0 = r.subscriber<int>("src/joystick/button/0");
   auto &button_1 = r.subscriber<int>("src/joystick/button/1");
+  auto &joystickAlive = r.subscriber<bool>("src/joystick/system/alive")
 
-  button_0 >> [&](const int x) { INFO(" button 0 %d", x); };
-
-  Sink<int> &pubPowerOn = r.publisher<int>("dst/limero/powerOn");
-  auto &subPowerOn = r.subscriber<int>("src/limero/powerOn");
-  auto &powerOn = *new ValueFlow<int>(0);
+                            auto &powerOn = *new ValueFlow<int>(0);
   r.subscriber<int>("dst/limero/powerOn") >> powerOn >>
       r.publisher<int>("src/limero/powerOn");
 
-  button_0 >> map(1, 1) >> pubPowerOn;
-  button_1 >> map(1, 0) >> pubPowerOn;
-  subPowerOn >> map(1, 0) >> r.publisher<int>("dst/raspi/gpio9/value");
-  subPowerOn >> map(1, 0) >> r.publisher<int>("dst/raspi/gpio15/value");
-  subPowerOn >> map(0, 1) >> r.publisher<int>("dst/raspi/gpio9/value");
-  subPowerOn >> map(0, 1) >> r.publisher<int>("dst/raspi/gpio15/value");
+  joystickAlive >> timeout(0) >> powerOn;
+  button_0 >> map(1, 1) >> powerOn;
+  button_1 >> map(1, 0) >> powerOn;
+  powerOn >> map(1, 0) >> r.publisher<int>("dst/raspi/gpio9/value");
+  powerOn >> map(1, 0) >> r.publisher<int>("dst/raspi/gpio15/value");
+  powerOn >> map(0, 1) >> r.publisher<int>("dst/raspi/gpio9/value");
+  powerOn >> map(0, 1) >> r.publisher<int>("dst/raspi/gpio15/value");
 
-  auto &collisonLeft = r.subscriber<int>("src/sideboard/sensor/left");
-  auto &collisonRight = r.subscriber<int>("src/sideboard/sensor/right");
-  collisonLeft >> map(1, 0) >> pubPowerOn;
-  collisonRight >> map(1, 0) >> pubPowerOn;
+  r.subscriber<int>("src/sideboard/sensor/left") >> map(1, 0) >> powerOn;
+  r.subscriber<int>("src/sideboard/sensor/right") >> map(1, 0) >> powerOn;
 
   auto &pubSrcPowerOn = r.publisher<int>("src/limero/powerOn");
 
   *timerWatchdog >> [&](const TimerMsg &) {
     pubWatchdog.on(true);
     redisBrainAlive.on(true);
-    pubSrcPowerOn.on(1);
+    powerOn.request();
   };
   workerThread.run();
 }
