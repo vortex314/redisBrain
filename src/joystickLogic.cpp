@@ -16,27 +16,41 @@ LambdaFlow<IN, OUT> &flow(std::function<bool(OUT &out, const IN &in)> f) {
 
 template <typename IN, typename OUT>
 LambdaFlow<IN, OUT> &timeout(Thread &thread, int timeout_msec, OUT v) {
-  TimerSource *timer = new TimerSource(thread, timeout_msec, true, "timeout_timer");
+  TimerSource *timer =
+      new TimerSource(thread, timeout_msec, true, "timeout_timer");
   auto &lf = *new LambdaFlow<IN, OUT>([&, timer](OUT &out, const IN &in) {
     timer->reset();
     return false;
   });
-  *timer >> [&, v](const TimerMsg &tm) {
-    lf.emit(v);
-  };
+  *timer >> [&, v](const TimerMsg &tm) { lf.emit(v); };
+  lf.name("timeout : " + std::to_string(timeout_msec));
   return lf;
 }
 
 template <typename IN, typename OUT>
 LambdaFlow<IN, OUT> &map(IN v1, OUT v2) {
-  return *new LambdaFlow<IN, OUT>([v1, v2](OUT &out, const IN &in) {
+  auto lf = new LambdaFlow<IN, OUT>([v1, v2](OUT &out, const IN &in) {
     if (in == v1) {
       out = v2;
-      INFO("map %d -> %d for %d -> %d", v1, v2, in, out);
       return true;
     }
     return false;
   });
+  lf->name("map(" + std::to_string(v1) + " -> " + std::to_string(v2) + ")");
+  return *lf;
+}
+
+template <typename T>
+LambdaFlow<T> &when(int &state, const int stateValue) {
+  auto lf = new LambdaFlow<T, T>([state, stateValue](T &out, const T &in) {
+    if (state == stateValue) {
+      out = in;
+      return true;
+    }
+    return false;
+  });
+  lf->name("when(" + std::to_string(stateValue) + ")");
+  return *lf;
 }
 
 template <typename IN, typename OUT>
@@ -90,18 +104,15 @@ void joystickLogic(Redis &r, Thread &workerThread) {
       hover_motor_steer;
 
   power_on_button >> map(1, 1) >> power_on_state;
-
-  power_off_button >> map(1, 0) >> log<int, int>("power_off_button") >>
-      power_on_state;
-
+  power_off_button >> map(1, 0) >> power_on_state;
   joystick_reader >> timeout<bool, int>(workerThread, 3000, 0) >>
-      log<int, int>("joystick timeout") >> power_on_state;
-
-  collison_left >> map(1, 0) >> log<int, int>("collision_left") >>
       power_on_state;
+  collison_left >> map(1, 0) >> power_on_state;
+  collison_right >> map(1, 0) >> power_on_state;
 
-  collison_right >> map(1, 0) >> log<int, int>("collision_right") >>
-      power_on_state;
+  power_on_state >> [](int v) {
+    INFO("power_on_state %d via %s", v, logStack.toString().c_str());
+  };
 
   power_on_state >> map(1, 0) >> power_relais_1;  // power on relais 1
   power_on_state >> map(1, 0) >> power_relais_2;  // power on relais 2

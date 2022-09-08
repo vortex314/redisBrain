@@ -8,11 +8,10 @@
 #include "Redis.h"
 Log logger;
 
-std::string loadFile(const char *name);
 bool loadConfig(JsonObject cfg, int argc, char **argv);
-int timeOfDay();
 
-extern void joystickLogic(Redis&,Thread&);
+extern void joystickLogic(Redis &, Thread &);
+extern void treeShaker(Redis &, Thread &);
 
 int main(int argc, char **argv) {
   INFO("Loading configuration.");
@@ -34,44 +33,11 @@ int main(int argc, char **argv) {
   redis.response() >> [&](const Json &json) {
     std::string s;
     serializeJson(json, s);
-    //  INFO("Got response : %s", s.c_str());
-  };
-
-  joystickLogic(redis,workerThread);
-
-  TimerSource ticker(workerThread, 300000, true, "ticker");
-  ValueFlow<bool> shake(false);
-  shake >> redis.publisher<bool>("dst/shaker1/shake/trigger");
-  shake >> redis.publisher<bool>("dst/shaker2/shake/trigger");
-  shake >> redis.publisher<bool>("dst/shaker3/shake/trigger");
-  redis.subscriber<uint32_t>("dst/brain/shaker/interval") >>
-      [&](const uint32_t &count) {
-        INFO("Got interval %d", count);
-        ticker.interval(count);
-      };
-
-  ticker >> [&shake](const TimerMsg &) {
-    int now = timeOfDay();
-    if (now > 529 && now < 2200) {
-      INFO("let's shake it %d ", now);
-      shake = true;
-    } else {
-      INFO(" sleeping.... ");
+    if (json.is<JsonArray>() && json[0] != "pmessage") {
+      INFO("Got response %s", s.c_str());
     }
   };
 
-  workerThread.run();
-}
-
-#include <sys/time.h>
-int timeOfDay() {
-  struct timeval tv;
-  struct timezone tz;
-  time_t t;
-  struct tm *info;
-
-  gettimeofday(&tv, NULL);
-  t = tv.tv_sec;
-  info = localtime(&t);
-  return (info->tm_hour * 100) + info->tm_min;
+  joystickLogic(redis, workerThread);
+  treeShaker(redis, workerThread);
 }
