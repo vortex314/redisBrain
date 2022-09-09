@@ -23,7 +23,7 @@ LambdaFlow<IN, OUT> &timeout(Thread &thread, int timeout_msec, OUT v) {
     return false;
   });
   *timer >> [&, v](const TimerMsg &tm) { lf.emit(v); };
-  lf.name((std::to_string(timeout_msec)+" msec timeout").c_str());
+  lf.name((std::to_string(timeout_msec) + " msec timeout").c_str());
   return lf;
 }
 
@@ -36,12 +36,13 @@ LambdaFlow<IN, OUT> &map(IN v1, OUT v2) {
     }
     return false;
   });
-  lf->name(("map(" + std::to_string(v1) + " -> " + std::to_string(v2) + ")").c_str());
+  lf->name(("map(" + std::to_string(v1) + " -> " + std::to_string(v2) + ")")
+               .c_str());
   return *lf;
 }
 
 template <typename T>
-LambdaFlow<T,T> &when(int &state, const int stateValue) {
+LambdaFlow<T, T> &when(int &state, const int stateValue) {
   auto lf = new LambdaFlow<T, T>([state, stateValue](T &out, const T &in) {
     if (state == stateValue) {
       out = in;
@@ -63,20 +64,25 @@ LambdaFlow<IN, OUT> &log(const char *s) {
 }
 
 template <typename IN, typename OUT>
-LambdaFlow<IN, OUT> *range(IN inMultiplier, IN x1, IN x2, OUT outMultiplier,
+LambdaFlow<IN, OUT> &range(IN inMultiplier, IN x1, IN x2, OUT outMultiplier,
                            OUT y1, OUT y2) {
-  return new LambdaFlow<IN, OUT>([=](OUT &out, const IN &in) {
+  auto lf = new LambdaFlow<IN, OUT>([=](OUT &out, const IN &in) {
     out = outMultiplier * scale(inMultiplier * in, x1, x2, y1, y2);
     INFO("range %d,%d -> %d,%d for %d -> %d", x1, x2, y1, y2, in, out);
     return true;
   });
+  lf->name(("range(" + std::to_string(x1) + "," + std::to_string(x2) + " -> " +
+            std::to_string(y1) + "," + std::to_string(y2) + ")")
+               .c_str());
+  return *lf;
 }
 void joystickLogic(Redis &r, Thread &workerThread) {
   // STATE
   auto &power_on_state = *new ValueFlow<int>(0);
+  power_on_state.name("power_on_state");
   r.subscriber<int>("dst/limero/powerOn") >> power_on_state >>
       r.publisher<int>("src/limero/powerOn");
-        typedef enum { REMOTE_CONTROL, SLEEP, LEARNING, CUTTING } MAIN_STATE;
+  enum { REMOTE_CONTROL, SLEEP, LEARNING, CUTTING };
   auto &main_state = *new ValueFlow<int>(REMOTE_CONTROL);
   auto &onRemote = when<int>(main_state.value(), REMOTE_CONTROL);
 
@@ -110,8 +116,7 @@ void joystickLogic(Redis &r, Thread &workerThread) {
   steer_joystick >> onRemote >> range(-1, -32768, +32768, +1, -90, +90) >>
       hover_motor_steer;
 
-
-  remote_on_button >> map<int,int>(1,REMOTE_CONTROL) >> main_state;
+  remote_on_button >> map<int, int>(1, REMOTE_CONTROL) >> main_state;
 
   power_on_button >> onRemote >> map(1, 1) >> power_on_state;
   power_off_button >> onRemote >> map(1, 0) >> power_on_state;
@@ -121,7 +126,7 @@ void joystickLogic(Redis &r, Thread &workerThread) {
   collison_right >> map(1, 0) >> power_on_state;
 
   power_on_state >> [](int v) {
-    INFO("power_on_state %d via %s", v, logStack.toString().c_str());
+    INFO("power_on_state = %d via %s", v, logStack.toString().c_str());
   };
 
   power_on_state >> map(1, 0) >> power_relais_1;  // power on relais 1

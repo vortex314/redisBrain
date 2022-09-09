@@ -25,11 +25,6 @@ int main(int argc, char **argv) {
 
   redis.connect();
 
-  Json helloCmd(1024);
-  helloCmd[0] = "hello";
-  helloCmd[1] = "3";
-  redis.request().on(helloCmd);
-
   redis.response() >> [&](const Json &json) {
     std::string s;
     serializeJson(json, s);
@@ -39,5 +34,5 @@ int main(int argc, char **argv) {
   };
 
   joystickLogic(redis, workerThread);
-//  treeShaker(redis, workerThread);
+  //  treeShaker(redis, workerThread);
 }

@@ -1,7 +1,15 @@
 {
   "redis": {
     "host": "limero.local",
-    "port": 6379
+    "port": 6379,
+    "addReplyContext": true,
+    "reconnectOnConnectionLoss": true,
+    "ignoreReplies": [
+      "publish"
+    ],
+    "initCommands": [
+      "hello 3"
+    ]
   },
   "log-ignore": {
     "prefix": "/home/lieven/log/redisBrain_",
