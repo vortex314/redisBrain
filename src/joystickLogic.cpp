@@ -76,9 +76,16 @@ void joystickLogic(Redis &r, Thread &workerThread) {
   auto &power_on_state = *new ValueFlow<int>(0);
   r.subscriber<int>("dst/limero/powerOn") >> power_on_state >>
       r.publisher<int>("src/limero/powerOn");
+        typedef enum { REMOTE_CONTROL, SLEEP, LEARNING, CUTTING } MAIN_STATE;
+  auto &main_state = *new ValueFlow<int>(REMOTE_CONROL);
+  auto &onRemote = when(main_state, REMOTE_CONTROL);
+
   // INPUT
+
   auto &power_on_button = r.subscriber<int>("src/joystick/button/0");
   auto &power_off_button = r.subscriber<int>("src/joystick/button/1");
+  auto &remote_on_button = r.subscriber<int>("src/joystick/button/2");
+
   auto &collison_left = r.subscriber<int>("src/sideboard/sensor/left");
   auto &collison_right = r.subscriber<int>("src/sideboard/sensor/right");
   auto &steer_joystick = r.subscriber<int>("src/joystick/axis/2");
@@ -97,14 +104,17 @@ void joystickLogic(Redis &r, Thread &workerThread) {
   TimerSource *timerWatchdog =
       new TimerSource(workerThread, 1000, true, "ticker");
 
-  speed_joystick >> range(1, -32768, +32768, -1, -1000, +1000) >>
+  speed_joystick >> onRemote >> range(1, -32768, +32768, -1, -1000, +1000) >>
       hover_motor_speed;
 
-  steer_joystick >> range(-1, -32768, +32768, +1, -90, +90) >>
+  steer_joystick >> onRemote >> range(-1, -32768, +32768, +1, -90, +90) >>
       hover_motor_steer;
 
-  power_on_button >> map(1, 1) >> power_on_state;
-  power_off_button >> map(1, 0) >> power_on_state;
+
+  remote_on_button >> map(1,REMOTE_CONTROL) >> main_state;
+
+  power_on_button >> onRemote >> map(1, 1) >> power_on_state;
+  power_off_button >> onRemote >> map(1, 0) >> power_on_state;
   joystick_reader >> timeout<bool, int>(workerThread, 3000, 0) >>
       power_on_state;
   collison_left >> map(1, 0) >> power_on_state;
