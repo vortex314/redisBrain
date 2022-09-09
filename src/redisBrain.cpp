@@ -39,5 +39,5 @@ int main(int argc, char **argv) {
   };
 
   joystickLogic(redis, workerThread);
-  treeShaker(redis, workerThread);
+//  treeShaker(redis, workerThread);
 }

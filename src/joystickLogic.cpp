@@ -23,7 +23,7 @@ LambdaFlow<IN, OUT> &timeout(Thread &thread, int timeout_msec, OUT v) {
     return false;
   });
   *timer >> [&, v](const TimerMsg &tm) { lf.emit(v); };
-  lf.name("timeout : " + std::to_string(timeout_msec));
+  lf.name((std::to_string(timeout_msec)+" msec timeout").c_str());
   return lf;
 }
 
@@ -36,12 +36,12 @@ LambdaFlow<IN, OUT> &map(IN v1, OUT v2) {
     }
     return false;
   });
-  lf->name("map(" + std::to_string(v1) + " -> " + std::to_string(v2) + ")");
+  lf->name(("map(" + std::to_string(v1) + " -> " + std::to_string(v2) + ")").c_str());
   return *lf;
 }
 
 template <typename T>
-LambdaFlow<T> &when(int &state, const int stateValue) {
+LambdaFlow<T,T> &when(int &state, const int stateValue) {
   auto lf = new LambdaFlow<T, T>([state, stateValue](T &out, const T &in) {
     if (state == stateValue) {
       out = in;
@@ -49,7 +49,7 @@ LambdaFlow<T> &when(int &state, const int stateValue) {
     }
     return false;
   });
-  lf->name("when(" + std::to_string(stateValue) + ")");
+  lf->name(("when(" + std::to_string(stateValue) + ")").c_str());
   return *lf;
 }
 
@@ -77,8 +77,8 @@ void joystickLogic(Redis &r, Thread &workerThread) {
   r.subscriber<int>("dst/limero/powerOn") >> power_on_state >>
       r.publisher<int>("src/limero/powerOn");
         typedef enum { REMOTE_CONTROL, SLEEP, LEARNING, CUTTING } MAIN_STATE;
-  auto &main_state = *new ValueFlow<int>(REMOTE_CONROL);
-  auto &onRemote = when(main_state, REMOTE_CONTROL);
+  auto &main_state = *new ValueFlow<int>(REMOTE_CONTROL);
+  auto &onRemote = when<int>(main_state.value(), REMOTE_CONTROL);
 
   // INPUT
 
@@ -111,7 +111,7 @@ void joystickLogic(Redis &r, Thread &workerThread) {
       hover_motor_steer;
 
 
-  remote_on_button >> map(1,REMOTE_CONTROL) >> main_state;
+  remote_on_button >> map<int,int>(1,REMOTE_CONTROL) >> main_state;
 
   power_on_button >> onRemote >> map(1, 1) >> power_on_state;
   power_off_button >> onRemote >> map(1, 0) >> power_on_state;
