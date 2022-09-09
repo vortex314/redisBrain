@@ -103,7 +103,8 @@ void joystickLogic(Redis &r, Thread &workerThread) {
   auto &pubWatchdog = r.publisher<bool>("dst/hover/motor/watchdogReset");
   auto &redisBrainAlive = r.publisher<bool>("src/redisBrain/system/alive");
   auto &hover_motor_speed = r.publisher<int>("dst/hover/motor/speedTarget");
-  auto &hover_motor_steer = r.publisher<int>("dst/hover/motor/angleTarget");
+  //  auto &hover_motor_steer = r.publisher<int>("dst/hover/motor/angleTarget");
+  auto &hover_motor_steer = r.publisher<int>("dst/hover/motor/angleDelta");
   auto &power_relais_1 = r.publisher<int>("dst/raspi/gpio9/value");
   auto &power_relais_2 = r.publisher<int>("dst/raspi/gpio15/value");
 
