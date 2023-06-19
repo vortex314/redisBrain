@@ -37,3 +37,25 @@ localPosition >> [](const Location& relativeLocation ){
 }
 ```
 
+# some thoughts 
+To avoid too high traffic you want properties to be only communicated on change or on a max frequency
+You don't want to limit the rate at the reciver
+You want to choose the properties
+The device should publisize teh properties
+The properties should contain 
+- key         : tree structure naming convention src/dst -- owner -- object -- property
+- value       : primitive values ( int,float,string ) or complex ( JSON structure )
+- updateTime  : last update in UTC
+- desc        : text description of property
+- mode        : read + write 
+- expireTime  : auto delete of the property
+
+Commands on this in memory dataset
+- publish
+-subscribe in different modes : all changes , on change , latest value every interval
+- info : give all surrounding info and metadata
+
+RedisJson seems a good solution , but it combines different technologies : RedisJson, Lua , PubSub 
+The time interval triggering looks a challenge 
+
+

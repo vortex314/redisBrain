@@ -13,6 +13,7 @@ bool loadConfig(JsonObject cfg, int argc, char **argv);
 int timeOfDay();
 
 extern void joystickLogic(Redis &, Thread &);
+int timeOfDay();
 
 int main(int argc, char **argv) {
   INFO("Loading configuration.");
@@ -39,8 +40,10 @@ int main(int argc, char **argv) {
 
   //  joystickLogic(redis, workerThread);
 
-  TimerSource ticker(workerThread, 300000, true, "ticker");
-  ValueFlow<bool> shake;
+  auto &ticker = workerThread.createTimer(300000, true, true, "ticker");
+
+  ValueFlow<bool> shake(workerThread);
+  ;
   shake >> redis.publisher<bool>("dst/shaker1/shake/trigger");
   shake >> redis.publisher<bool>("dst/shaker2/shake/trigger");
   shake >> redis.publisher<bool>("dst/shaker3/shake/trigger");
@@ -50,7 +53,7 @@ int main(int argc, char **argv) {
         ticker.interval(count);
       };
 
-  ticker >> [&shake](const TimerMsg &) {
+  ticker >> [&shake](const TimerSource &) {
     int now = timeOfDay();
     if (now > 529 && now < 2359) {
       INFO("let's shake it %d ", now);
