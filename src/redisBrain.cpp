@@ -12,7 +12,7 @@ std::string loadFile(const char *name);
 bool loadConfig(JsonObject cfg, int argc, char **argv);
 int timeOfDay();
 
-extern void joystickLogic(Redis&,Thread&);
+extern void joystickLogic(Redis &, Thread &);
 
 int main(int argc, char **argv) {
   INFO("Loading configuration.");
@@ -34,10 +34,10 @@ int main(int argc, char **argv) {
   redis.response() >> [&](const Json &json) {
     std::string s;
     serializeJson(json, s);
-    //  INFO("Got response : %s", s.c_str());
+    INFO("Got response : %s", s.c_str());
   };
 
-  joystickLogic(redis,workerThread);
+  //  joystickLogic(redis, workerThread);
 
   TimerSource ticker(workerThread, 300000, true, "ticker");
   ValueFlow<bool> shake;
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 
   ticker >> [&shake](const TimerMsg &) {
     int now = timeOfDay();
-    if (now > 529 && now < 2200) {
+    if (now > 529 && now < 2359) {
       INFO("let's shake it %d ", now);
       shake = true;
     } else {
