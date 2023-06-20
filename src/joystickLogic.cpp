@@ -17,13 +17,13 @@ Flow<IN, OUT> &flow(std::function<bool(OUT &out, const IN &in)> f) {
 template <typename IN, typename OUT>
 Flow<IN, OUT> &timeout(Thread &thread, int timeout_msec, OUT v) {
   TimerSource &timer =
-      thread.createTimer(timeout_msec, true,true, "timeout_timer");
-  auto &lf = *new Flow<IN, OUT>([&, timer](OUT &out, const IN &in) {
- //   timer->start();
+      thread.createTimer(timeout_msec, true, true, "timeout_timer");
+  auto &lf = *new Flow<IN, OUT>([&](OUT &out, const IN &in) {
+    timer.start();
     return false;
   });
   timer >> [&, v](const TimerSource &tm) { lf.emit(v); };
- // lf.name((std::to_string(timeout_msec) + " msec timeout").c_str());
+  // lf.name((std::to_string(timeout_msec) + " msec timeout").c_str());
   return lf;
 }
 
@@ -42,9 +42,9 @@ Flow<IN, OUT> &map(IN v1, OUT v2) {
 }
 
 template <typename T>
-Flow<T, T> &when(int &state, const int stateValue) {
-  auto lf = new Flow<T, T>([state, stateValue](T &out, const T &in) {
-    if (state == stateValue) {
+Flow<T, T> &when(ValueFlow<int>& stateFunction, const int stateValue) {
+  auto lf = new Flow<T, T>([&stateFunction, stateValue](T &out, const T &in) {
+    if (stateFunction() == stateValue) {
       out = in;
       return true;
     }
@@ -64,8 +64,8 @@ Flow<IN, OUT> &log(const char *s) {
 }
 
 template <typename IN, typename OUT>
-Flow<IN, OUT> &range(IN inMultiplier, IN x1, IN x2, OUT outMultiplier,
-                           OUT y1, OUT y2) {
+Flow<IN, OUT> &range(IN inMultiplier, IN x1, IN x2, OUT outMultiplier, OUT y1,
+                     OUT y2) {
   auto lf = new Flow<IN, OUT>([=](OUT &out, const IN &in) {
     out = outMultiplier * scale(inMultiplier * in, x1, x2, y1, y2);
     INFO("range %d,%d -> %d,%d for %d -> %d", x1, x2, y1, y2, in, out);
@@ -87,7 +87,7 @@ void joystickLogic(Redis &r, Thread &workerThread) {
   auto &main_state = *new ValueFlow<int>(workerThread);
   main_state.name("main_state");
   main_state = REMOTE_CONTROL;
-  //auto &onRemote = when<int>({int ms=main_state(),ms}, REMOTE_CONTROL);
+  auto &onRemote = when<int>(main_state, REMOTE_CONTROL);
 
   // INPUT
 
@@ -112,7 +112,7 @@ void joystickLogic(Redis &r, Thread &workerThread) {
   auto &power_relais_2 = r.publisher<int>("dst/raspi/gpio15/value");
 
   TimerSource &timerWatchdog =
-      workerThread.createTimer( 1000, true,true, "ticker");
+      workerThread.createTimer(1000, true, true, "ticker");
 
   speed_joystick >> onRemote >> range(1, -32768, +32768, -1, -1000, +1000) >>
       hover_motor_speed;
@@ -130,7 +130,7 @@ void joystickLogic(Redis &r, Thread &workerThread) {
   collison_right >> map(1, 0) >> power_on_state;
 
   power_on_state >> [](int v) {
-    INFO("power_on_state = %d via %s", v, logStack.toString().c_str());
+  //  INFO("power_on_state = %d via %s", v, logStack.toString().c_str());
   };
 
   power_on_state >> map(1, 0) >> power_relais_1;  // power on relais 1
@@ -138,10 +138,10 @@ void joystickLogic(Redis &r, Thread &workerThread) {
   power_on_state >> map(0, 1) >> power_relais_1;  // power off relais 1
   power_on_state >> map(0, 1) >> power_relais_2;  // power off relais 2
 
-  *timerWatchdog >> [&](const TimerMsg &) {
+  timerWatchdog >> [&](const TimerSource &) {
     pubWatchdog.on(true);
     redisBrainAlive.on(true);
-    power_on_state.request();
+    power_on_state.on(power_on_state());
   };
   workerThread.run();
 }
