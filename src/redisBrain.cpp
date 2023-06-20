@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
 
   ticker >> [&shake](const TimerSource &) {
     int now = timeOfDay();
-    if (now > 529 && now < 2359) {
+    if (now > 529 && now < 2200) {
       INFO("let's shake it %d ", now);
       shake = true;
     } else {
