@@ -48,7 +48,7 @@ include_directories(src
 
 target_link_libraries(redisBrain 
         -lpthread 
-        -L../${HIREDIS} -l:libhiredis.a
+        -L../${HIREDIS}/build -l:libhiredis.a
         -lrt 
         -pthread 
         -latomic )
